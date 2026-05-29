@@ -52,6 +52,7 @@ set(TOUCH_CONTROLLERS
     ${CMAKE_CURRENT_LIST_DIR}/u2hts_touch_controllers/cst8xx.c
     ${CMAKE_CURRENT_LIST_DIR}/u2hts_touch_controllers/chsc6540.c
     ${CMAKE_CURRENT_LIST_DIR}/u2hts_touch_controllers/goodix_normandy.c
+    ${CMAKE_CURRENT_LIST_DIR}/u2hts_touch_controllers/dummy_test.c
 )
 
 set(SOURCES 
