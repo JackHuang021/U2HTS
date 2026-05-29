@@ -3,3 +3,4 @@ build
 board
 p_*.c
 .DS_Store
+.claude
