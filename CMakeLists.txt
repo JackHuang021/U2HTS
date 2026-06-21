@@ -38,9 +38,8 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/u2hts_core)
 target_compile_definitions(u2hts_core_settings INTERFACE
     U2HTS_LOG_LEVEL=U2HTS_LOG_LEVEL_INFO
     U2HTS_ENABLE_LED
+    U2HTS_ENABLE_KEY
     # U2HTS_ENABLE_PERSISTENT_CONFIG
-    # U2HTS_ENABLE_KEY
-    U2HTS_CONFIG_TIMEOUT=5000
     # U2HTS_ENABLE_COMPACT_REPORT
 )
 
@@ -63,6 +62,13 @@ set(SOURCES
 
 # Add executable. Default name is the project name, version 0.1
 add_executable(U2HTS ${SOURCES} ${TOUCH_CONTROLLERS})
+
+# UART debug pins: TX=GPIO12, RX=GPIO13
+target_compile_definitions(U2HTS PRIVATE
+    PICO_DEFAULT_UART_TX_PIN=12
+    PICO_DEFAULT_UART_RX_PIN=13
+    PICO_DEFAULT_LED_PIN=19
+)
 
 find_package(Git QUIET)
 if(GIT_FOUND)
@@ -103,6 +109,7 @@ target_link_options(U2HTS PRIVATE
 # Add any user requested libraries
 target_link_libraries(U2HTS PUBLIC
     hardware_i2c
+    hardware_pwm
     pico_unique_id
     tinyusb_device
     tinyusb_board

@@ -58,7 +58,9 @@ inline uint16_t u2hts_get_timestamp() {
   return (uint16_t)(to_us_since_boot(time_us_64()) / 100);
 }
 
-inline void u2hts_led_set(bool on) { gpio_put(PICO_DEFAULT_LED_PIN, on); }
+inline void u2hts_led_set(bool on) {
+  gpio_put(PICO_DEFAULT_LED_PIN, !on);  // active low
+}
 
 static void u2hts_rp2_flash_erase(void* param) {
   (void)param;
@@ -83,6 +85,16 @@ inline uint16_t u2hts_read_config() {
 }
 
 inline bool u2hts_usrkey_get() { return gpio_get(U2HTS_USR_KEY); }
+
+inline void u2hts_backlight_set(bool on) {
+  uint slice = pwm_gpio_to_slice_num(U2HTS_BACKLIGHT_PIN);
+  uint chan = pwm_gpio_to_channel(U2HTS_BACKLIGHT_PIN);
+  pwm_set_chan_level(slice, chan, on ? 37 : 0);  // 30% or off
+}
+
+inline void u2hts_enable_set(bool on) {
+  gpio_put(U2HTS_ENABLE_PIN, on);
+}
 
 inline void u2hts_tpint_set_mode(bool mode, bool pull) {
   gpio_deinit(U2HTS_TP_INT);
@@ -301,7 +313,12 @@ inline void u2hts_ts_irq_set(bool enable) {
 }
 
 inline static void u2hts_rp2_irq_cb(uint gpio, uint32_t event_mask) {
-  u2hts_ts_irq_status_set(gpio == U2HTS_TP_INT && (event_mask & real_irq_type));
+  if (gpio == U2HTS_TP_INT && (event_mask & real_irq_type))
+    u2hts_ts_irq_status_set(true);
+#ifdef U2HTS_ENABLE_KEY
+  if (gpio == U2HTS_USR_KEY && (event_mask & GPIO_IRQ_EDGE_RISE))
+    u2hts_key_irq_set_flag();
+#endif
 }
 
 inline void u2hts_ts_irq_init(U2HTS_IRQ_TYPES irq_type) {
@@ -328,6 +345,12 @@ inline void u2hts_ts_irq_init(U2HTS_IRQ_TYPES irq_type) {
   gpio_set_irq_enabled_with_callback(U2HTS_TP_INT, real_irq_type, true,
                                      u2hts_rp2_irq_cb);
 }
+
+#ifdef U2HTS_ENABLE_KEY
+inline void u2hts_key_irq_init() {
+  gpio_set_irq_enabled(U2HTS_USR_KEY, GPIO_IRQ_EDGE_RISE, true);
+}
+#endif
 
 inline void u2hts_usb_report(const u2hts_hid_report* report) {
   static_assert(sizeof(u2hts_hid_report) < CFG_TUD_HID_EP_BUFSIZE,

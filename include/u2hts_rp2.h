@@ -11,6 +11,7 @@
 #include <bsp/board_api.h>
 #include <hardware/flash.h>
 #include <hardware/i2c.h>
+#include <hardware/pwm.h>
 #include <pico/flash.h>
 #include <pico/stdlib.h>
 #include <tusb.h>
@@ -29,19 +30,19 @@
 #define U2HTS_I2C_TIMEOUT 10 * 1000  // 10ms
 
 #ifndef PICO_DEFAULT_I2C_SDA_PIN
-#define U2HTS_I2C_SDA 4
+#define U2HTS_I2C_SDA 28
 #else
 #define U2HTS_I2C_SDA PICO_DEFAULT_I2C_SDA_PIN
 #endif
 
 #ifndef PICO_DEFAULT_I2C_SCL_PIN
-#define U2HTS_I2C_SCL 5
+#define U2HTS_I2C_SCL 29
 #else
 #define U2HTS_I2C_SCL PICO_DEFAULT_I2C_SCL_PIN
 #endif
 
 #ifndef U2HTS_TP_INT
-#define U2HTS_TP_INT 2
+#define U2HTS_TP_INT 4
 #endif
 
 #ifndef U2HTS_TP_RST
@@ -49,8 +50,11 @@
 #endif
 
 #ifndef U2HTS_USR_KEY
-#define U2HTS_USR_KEY 6
+#define U2HTS_USR_KEY 18
 #endif
+
+#define U2HTS_BACKLIGHT_PIN 0
+#define U2HTS_ENABLE_PIN 11
 
 // last page
 #define U2HTS_CONFIG_STORAGE_OFFSET PICO_FLASH_SIZE_BYTES - 8192
@@ -151,10 +155,29 @@ inline static void u2hts_pins_init() {
   gpio_set_dir(U2HTS_TP_RST, GPIO_OUT);
   gpio_put(U2HTS_TP_RST, true);
 
+  // LED: active low
   gpio_set_function(PICO_DEFAULT_LED_PIN, GPIO_FUNC_SIO);
   gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+  gpio_put(PICO_DEFAULT_LED_PIN, true);  // off (active low)
 
+  // User key: input with pull-down
   gpio_init(U2HTS_USR_KEY);
   gpio_set_dir(U2HTS_USR_KEY, GPIO_IN);
+  gpio_pull_down(U2HTS_USR_KEY);
+
+  // Backlight PWM: GPIO0, 25KHz, 30% duty
+  gpio_set_function(U2HTS_BACKLIGHT_PIN, GPIO_FUNC_PWM);
+  uint slice = pwm_gpio_to_slice_num(U2HTS_BACKLIGHT_PIN);
+  pwm_config cfg = pwm_get_default_config();
+  pwm_config_set_clkdiv(&cfg, 40.0f);  // 125MHz / 40 = 3.125MHz
+  pwm_config_set_wrap(&cfg, 124);       // 3.125MHz / 125 = 25KHz
+  pwm_init(slice, &cfg, true);
+  pwm_set_chan_level(slice, pwm_gpio_to_channel(U2HTS_BACKLIGHT_PIN),
+                     37);  // 124 * 0.3 ≈ 37 (30% duty)
+
+  // Enable output: default high
+  gpio_init(U2HTS_ENABLE_PIN);
+  gpio_set_dir(U2HTS_ENABLE_PIN, GPIO_OUT);
+  gpio_put(U2HTS_ENABLE_PIN, true);
 }
 #endif
