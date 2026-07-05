@@ -34,6 +34,7 @@ project(U2HTS C CXX ASM)
 pico_sdk_init()
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/u2hts_core)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/u2hts_touch_controllers)
 
 # Default hid report descriptor contains 10 touch points
 # Below is an example of how to override it with 5 touch points.
@@ -50,23 +51,13 @@ target_compile_definitions(u2hts_core_settings INTERFACE
     # U2HTS_ENABLE_COMPACT_REPORT
 )
 
-set(TOUCH_CONTROLLERS
-    ${CMAKE_CURRENT_LIST_DIR}/u2hts_touch_controllers/gt9xx.c
-    ${CMAKE_CURRENT_LIST_DIR}/u2hts_touch_controllers/ft54x6.c
-    ${CMAKE_CURRENT_LIST_DIR}/u2hts_touch_controllers/rmi_common.c
-    ${CMAKE_CURRENT_LIST_DIR}/u2hts_touch_controllers/rmi_f11.c
-    ${CMAKE_CURRENT_LIST_DIR}/u2hts_touch_controllers/cst8xx.c
-    ${CMAKE_CURRENT_LIST_DIR}/u2hts_touch_controllers/chsc6540.c
-    ${CMAKE_CURRENT_LIST_DIR}/u2hts_touch_controllers/goodix_normandy.c
-)
-
-set(SOURCES 
+set(SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/src/u2hts_rp2.c
     ${CMAKE_CURRENT_LIST_DIR}/u2hts_main.c
 )
 
 # Add executable. Default name is the project name, version 0.1
-add_executable(U2HTS ${SOURCES} ${TOUCH_CONTROLLERS})
+add_executable(U2HTS ${SOURCES})
 
 find_package(Git QUIET)
 if(GIT_FOUND)
@@ -111,6 +102,7 @@ target_link_libraries(U2HTS PUBLIC
     tinyusb_device
     tinyusb_board
     u2hts_core
+    u2hts_touch_controllers
 )
 
 target_compile_options(U2HTS PRIVATE 
